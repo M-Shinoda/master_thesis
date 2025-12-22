@@ -1,0 +1,28 @@
+\documentclass[a4paper, 12pt, xelatex, ja=standard]{bxjsreport}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{pdfpages}
+\usepackage{ascmac}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{url}
+
+\renewcommand{\figurename}{Fig.}
+\renewcommand{\tablename}{Table.}
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+    \pagestyle{empty}
+    \pagenumbering{roman}
+    \pagestyle{plain}
+
+    \include{chapter/0_abstract.tex}
+
+    \tableofcontents
+
+    \clearpage
+    \pagenumbering{arabic}
+
+    \input{main_sections}
+\end{document}
