@@ -1,0 +1,23 @@
+\begin{table}[tb]
+    \centering
+    \caption{YouTube Live Comments vs. X Feature Comparison.}
+    % \small
+    \begin{tabular}{lll}
+        \hline
+        項目        & X                       & YouTubeライブチャット                            \\
+        \hline
+        \hline
+        データ取得     & Web API （X API v2）      & \makecell[l]{Web API \\（YouTube Data API v3）}            \\
+        APIデータ収集数 & 月100ポスト以上は有料            & \makecell[l]{1リクエスト 5Quota \\（1日10000Quota）} \\
+        投稿形式      & 単発ポスト                   & 単一の配信チャットストリーム                         \\
+        スレッド構造    & 対応                      & 非対応                                       \\
+        拡散指標      & リツイート，リプライなど            & なし                         \\
+        投稿者       & X利用者                    & 特定のライブ視聴者のみ                               \\
+        画像・動画     & 投稿可能                    & 投稿不可                                      \\
+        絵文字       & 一般的な絵文字                 & 一般的＋YouTubeエモート                           \\
+        文字数       & \makecell[l]{最大 \\ 半角280・全角140文字\\（無料枠仕様）} & 短文（最大200文字）                               \\
+        投稿の保存期間   & 永続                      & \makecell[l]{随時削除 \\（収集対象のライブ配信に限る）}                       \\
+        \hline
+    \end{tabular}
+    \label{tab:yt_x_comp}
+\end{table}
