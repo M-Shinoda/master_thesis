@@ -6,9 +6,33 @@
 \usepackage{titlesec}
 \usepackage{booktabs}
 \usepackage{url}
+\usepackage{makecell}
+\usepackage{amsmath}
 
+% Caption label format (e.g., "Fig.3.1 <caption>")
 \renewcommand{\figurename}{Fig.}
 \renewcommand{\tablename}{Table.}
+\makeatletter
+\renewcommand{\fnum@figure}{\figurename\thefigure}
+\renewcommand{\fnum@table}{\tablename\thetable}
+\long\def\@makecaption#1#2{%
+    \vskip\abovecaptionskip
+    \sbox\@tempboxa{#1\hskip0.75em#2}%
+    \ifdim\wd\@tempboxa>\hsize
+        #1\hskip0.75em#2\par
+    \else
+        \global\@minipagefalse
+        \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+    \fi
+    \vskip\belowcaptionskip}
+\makeatother
+
+% 図の参照用コマンド
+\newcommand{\figref}[1]{\figurename\ref{#1}}
+% 表の参照用コマンド
+\newcommand{\tabref}[1]{\tablename\ref{#1}}
+% 式の参照用コマンド（amsmathの\eqrefは括弧付きで参照するため、別名を用意）
+\newcommand{\eqrefname}[1]{Eq.~(\ref{#1})}
 
 \setcounter{tocdepth}{2}
 
