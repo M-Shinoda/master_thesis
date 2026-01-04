@@ -20,7 +20,7 @@
 
   \section{システム構成}
 
-  \figref{fig:system_overview}示したにしたように，全体的なシステムはデータ収集，蓄積，感情分析，ダッシュボードによる可視化の4つによって構成されている．収集機能では主にYouTubeが提供するWeb
+  \figref{fig:system_overview}で示したにしたように，全体的なシステムはデータ収集，蓄積，感情分析，ダッシュボードによる可視化の4つによって構成されている．収集機能では主にYouTubeが提供するWeb
   API（YouTube Data API）に対しリクエストを行う．収集のためのスクリプトを実装し，収集した生データをDBに蓄積する．蓄積されたデータは随時感情分析が行われ，再度DBに格納される．
   これらのデータは収集後，順次処理された分析結果をダッシュボードにて可視化することが可能となる． 具体的な構成図を\figref{fig:system_configuration}にまとめ，構成について以下で述べる．実装環境について\tabref{tab:implementation_environment}に示す．
 
@@ -42,7 +42,7 @@
   今回使用するライブ配信用の youtube.api.v3.V3DataLiveChatMessageService.List
   APIでは，1リクエストに対して5Quota消費する． 現状公式のドキュメントには記載がないため，今後の仕様変更に注意が必要である．
 
-  これらの使用を踏まえた上で、1日に等間隔で取得するには以下の式~\eqref{eq:eq1}で実行間隔求められる．
+  これらの使用を踏まえた上で、1日に等間隔で取得するには以下の式~\eqref{eq:eq1}でが求められる．
   \begin{equation}
       \frac{60\,(\mathrm{sec}) \times 60\,(\mathrm{min}) \times 24\,(\mathrm{hour})}{{10000\,(\mathrm{Quota})}/{5\,(\mathrm{Quota})}}
       = 43.2\,(\mathrm{sec}) \label{eq:eq1}
@@ -51,16 +51,18 @@
   % TODO：リクエスト数上限も記載すると良いかも
   その上で，本システムでは余裕を含め最高2分に1度取得を行う．
 
+  \input{table/key_fields_youtube_live_comments} % TODO: Xの内容も
+
   %3．3．2
   \subsection{データ蓄積}
   % 収集したデータについてはGCPのBigQueryを使用する． SQLでの分析に加え，LookerStudioとの相性も良く，データの可視化を可能としている．
   % そのため，収集されたコメントや別途，LookerStudioのコネクタと組み合わせることで，災害情報とコメントデータの可視化分析を行う．
   % 蓄積したデータ数をTable2にまとめる．XではAPIでのリクエスト時に使用したパラメータを収集内容で示す．
-  収集したデータの蓄積先として，GCPが提供するサーバーレスデータウェアハウスであるBigQueryを採用した．
+  収集したデータの蓄積先として，GCPが提供するサーバレスデータウェアハウスであるBigQueryを採用した．
 
   本研究では，データベースの構築および管理をTerraformを用いたInfrastructure as Code
   (IaC) によってインフラ構築を行なう． これにより，インフラ構成をコードとして宣言的に記述できるため，環境の再現性や保守性を高め，人的ミスを低減する．
-  また，投稿日時を示すフィールドをキーとして日付ごとのパーティショニンを設定し，効率化を図る．
+  また，投稿日時を示すフィールドをキーとして日付ごとのパーティショニングを設定し，効率化を図る．
 
   % 実際に蓄積したデータ数を\tabref{tab:table2}にまとめ，XではAPIでのリクエスト時に使用したパラメータを収集内容で示す．
 
@@ -69,8 +71,6 @@
   収集データの主要なフィールドを\tabref{tab:key_fields_youtube_live_comments}に示す． 特にsnippet\_displayMessageがコメントの生テキストデータであり，感情分析の主たる対象となる．
   コメントデータ以外にも，運営がコメントやユーザを禁止した履歴やスーパチャットなどの内容も含まれる．
   そのため，snippet\_typeは各レコードの特性を明確にしている．
-
-  \input{table/key_fields_youtube_live_comments} % TODO: Xの内容も
 
   % %3．3．3
   \subsection{感情分析}
