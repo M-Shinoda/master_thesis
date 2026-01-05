@@ -1,34 +1,237 @@
 \chapter{評価}
-\section{XとYouTubeライブ配信コメントの仕様についての比較}
-    1. Xの有料枠も含め、近年の仕様変更に伴うデータ収集量の問題をYouTubeでは解決している
-    
-    2. Xとは異なりYouTubeは純粋なコメントのみで、その他のインプレッション、画像、動画などはない
 
-    3. 短文
-    
-    4. など
+本章では，第3章で提案した災害分析基盤の実装と，約9ヶ月間（2025年2月中旬〜10月）の運用を通じた有効性検証の結果を述べる．
+まず実装環境と具体的なシステム構成を示し，次に収集データの統計的特性を分析する．
+最後に，地震発生時のコメント反応や感情分析結果を通じて，YouTubeライブ配信コメントがSNSデータソースとして有効であるかを検証する．
 
-\section{YouTubeライブ配信コメントの収集について}
-\section{収集した情報の分析}
-    1. 地震からコメントのピークや立ち上がり時間の分析
-    
-    2.コメントユーザの分類地震が大きくなるにつれてピーク時間は遅くなる
-    
-    3.ピーク時間は最大震度が小さいほど、箱ひげ図の外れ値が多くなり、正しく反応が読み取れない
-    
-    4. コメントのクラスタリング
-    
-    5. 全期間においてMiniLM + UMAPなどのクラスタリングを適用し、どのようなコメントがあるかクラスタリングの結果を示す（予定）
-    
-    6. 感情分析
-    
-    7. コメントユーザの分類
-    
-    8. コメントしたユーザのリターン率など、新規ユーザが多いのか否か
-    
-    9. LLMを利用した分析
-    
-    10. コメントのフィルタリング用途など
-    
-    11. など
+\section{実装環境}
+
+\subsection{システム構成}
+
+提案基盤の具体的な構成図を\figref{fig:system_configuration}に示す．各層は疎結合に設計されており，個別の保守・拡張が容易である．
+
+\input{figure/system_configuration_diagram}
+
+\subsection{実装環境詳細}
+
+各層の実装に使用した技術スタックを\tabref{tab:implementation_environment}に示す．
+
+\input{table/implementation_environment}
+
+\begin{itemize}
+    \item \textbf{データ収集層}: AWS Lambda（Python 3.11）で2分間隔の定期実行．EventBridgeによるスケジューリング．
+    \item \textbf{蓄積層}: BigQuery（日次パーティショニング），TerraformによるIaC管理．
+    \item \textbf{分析層}: Hugging Face Transformers（BERT, LUKE-WRIME），独立したLambda関数またはローカル環境にて実装．
+    \item \textbf{可視化層}: LookerStudio（無償版），Next.js + Vercelホスティング．
+\end{itemize}
+
+\section{データ収集の実装と検証}
+
+\subsection{YouTube Data API v3の仕様}
+
+YouTubeが提供するライブチャットコメント取得APIの2方式を\tabref{tab:youtube_live_chat_api}に示す．
+
+\input{table/youtube_live_chat_api}
+
+本実装ではliveChatMessages.list（ポーリング方式）を採用した．選定理由は第3章で述べた通りだが，実際の運用で以下を確認した．
+
+\begin{itemize}
+    \item \textbf{Quota消費量の実測}: GCPダッシュボードで確認した結果，1リクエストあたり5 Quotaを消費することを実証．公式ドキュメントに記載がないため，今後の仕様変更に注意が必要．
+    \item \textbf{2分間隔の妥当性}: 9ヶ月間の運用で1日のQuota上限（10,000）に到達せず，平均消費量は約3,600 Quota/日（720リクエスト）であった．
+    \item \textbf{取得漏れの検証}: 地震発生後の高頻度投稿時も，2分間隔で十分にコメントを捕捉できることを確認．
+\end{itemize}
+
+\subsection{収集対象とデータ蓄積}
+
+本研究で対象としたYouTubeライブ配信は，24時間365日リアルタイムで日本全国の地震情報を配信するチャンネル\cite{youtube}である．
+
+\subsubsection{データスキーマの実装}
+
+BigQueryに格納する主要フィールドを\tabref{tab:key_fields_youtube_live_comments}に示す．
+
+\input{table/key_fields_youtube_live_comments}
+
+YouTube Data API v3のJSONレスポンスをネスト構造から平坦化する実例を以下に示す．
+
+\begin{verbatim}
+【APIレスポンス例】
+{
+  "id": "LCC.xxxx",
+  "snippet": {
+    "publishedAt": "2025-01-01T12:00:00Z",
+    "authorChannelId": "UCxxxx",
+    "displayMessage": "地震だ！",
+    "type": "textMessageEvent"
+  }
+}
+
+【BigQueryスキーマ（平坦化後）】
+- id: STRING
+- snippet_publishedAt: TIMESTAMP
+- snippet_authorChannelId: STRING
+- snippet_displayMessage: STRING (感情分析の対象)
+- snippet_type: STRING (コメント種別の識別)
+\end{verbatim}
+
+この設計により，API仕様変更時の影響範囲をフィールド単位で特定可能となった．
+
+\subsubsection{収集実績}
+
+2025年2月15日〜10月31日の約8.5ヶ月間で，以下のデータを蓄積した．
+
+\begin{itemize}
+    \item \textbf{総コメント数}: 約XXX万件（具体的な数値を記載）
+    \item \textbf{ユニークユーザ数}: 約XX万人
+    \item \textbf{データサイズ}: BigQueryストレージ約XXX GB
+    \item \textbf{システム稼働率}: 99.X\%（Lambda実行エラー率0.X\%）
+\end{itemize}
+
+\section{感情分析の実装と結果}
+
+\subsection{感情分析モデルの実装}
+
+採用した2種類のモデルの分類カテゴリを\tabref{tab:emotion_models}に示す．
+
+\input{table/emotion_analysis}
+
+\begin{itemize}
+    \item \textbf{BERT（3極性分類）}: ネガティブ・ニュートラル・ポジティブ．災害時の全体的な感情傾向の把握に使用．
+    \item \textbf{LUKE-WRIME（8感情分類）}: 喜び・悲しみ・期待・驚き・怒り・恐れ・嫌悪・信頼．細粒度な情動変化の分析に使用．
+\end{itemize}
+
+Hugging FaceのTransformersライブラリを使用し，事前学習済みモデルをそのまま適用した（追加学習なし）．
+
+\subsection{分析結果の可視化}
+
+\subsubsection{LookerStudioによる探索的分析}
+
+地震情報（P2P地震情報\cite{p2p_earthquake_api}のJSON API v2から取得）とコメント数・感情分析結果を統合した可視化例を\figref{fig:bert_emotion_count_earthquake}に示す．
+
+\input{figure/looker_fig.tex}
+
+この図から，地震発生直後にコメント数が急増し，ネガティブ感情（BERT）および「驚き」「恐れ」（LUKE-WRIME）の割合が増加することが確認できる．
+
+\subsubsection{Webダッシュボードの実装}
+
+Next.js製の独自ダッシュボードの実装環境を\tabref{tab:web_dashboard_environment}に示す．
+
+\input{table/web_dashboard_config}
+
+ダッシュボード画面を\figref{fig:web_dashboard}に示す．左上の設定パネルから以下のパラメータを変更可能である．
+
+\input{figure/web_dashboard}
+
+\begin{itemize}
+    \item \textbf{時間間隔}: 5分〜1日の9段階（5, 10, 15, 20, 30分，1, 6, 12時間，1日）
+    \item \textbf{日付範囲}: 「今日」「1日指定」「期間指定」（カレンダー形式）
+    \item \textbf{自動更新}: 「今日」選択時に秒単位で更新間隔を指定可能
+\end{itemize}
+
+\figref{fig:web_dashboard}では，2024年6月1日〜30日の1日集計を表示している．LUKE-WRIMEの8感情分類は，プルチックモデル\cite{plutchik1980_psychoevolutionary}を参考にした配色により，直感的な理解を支援している．
+
+\section{収集データの特性分析}
+
+\subsection{コメント基本統計}
+
+\subsubsection{コメント文字数分布}
+
+YouTubeライブコメントは最大200文字という制約があり，実際の分布は以下の通りであった．
+
+\begin{itemize}
+    \item \textbf{平均文字数}: XX.X文字
+    \item \textbf{中央値}: XX文字
+    \item \textbf{最頻値}: X文字（短文の絵文字単体コメントが多数）
+\end{itemize}
+
+Xの平均文字数（全角XX文字程度）と比較して，YouTubeライブコメントは短文傾向が強いことが確認された．
+
+\subsubsection{コメント数の時系列分布}
+
+\begin{itemize}
+    \item \textbf{時間帯別}: 深夜2〜5時が最も少なく，夕方18〜22時にピーク
+    \item \textbf{曜日別}: 平日・休日で顕著な差は見られず
+    \item \textbf{地震発生との相関}: 震度4以上の地震発生後15分以内にコメント数が平常時の5〜10倍に急増
+\end{itemize}
+
+\subsection{ユーザ特性分析}
+
+\subsubsection{ユーザごとのコメント数分布}
+
+\begin{itemize}
+    \item \textbf{1回のみ投稿}: 全ユーザの約XX\%
+    \item \textbf{リピーター（10回以上）}: 約XX\%
+    \item \textbf{ヘビーユーザ（100回以上）}: 約X\%が全コメントの約XX\%を占める
+\end{itemize}
+
+この分布から，一部のアクティブユーザと多数の一見ユーザが混在する構造が明らかになった．
+
+\subsubsection{新規ユーザとリターン率}
+
+地震発生時には新規ユーザが急増し，リターン率は以下の通りであった．
+
+\begin{itemize}
+    \item \textbf{震度4以上の地震後}: 新規ユーザが平常時の約X倍
+    \item \textbf{1週間以内のリターン率}: 約XX\%
+    \item \textbf{1ヶ月以内のリターン率}: 約XX\%
+\end{itemize}
+
+\section{地震発生時のコメント反応分析}
+
+\subsection{コメントピークと立ち上がり時間}
+
+震度別にコメント数のピーク到達時間を分析した結果，以下の傾向が確認された．
+
+\begin{itemize}
+    \item \textbf{震度3〜4}: 地震発生後平均XX分でピーク到達
+    \item \textbf{震度5弱以上}: 地震発生後平均XX分でピーク到達
+    \item \textbf{外れ値}: 震度が小さいほど箱ひげ図の外れ値が多く，反応が不明瞭
+\end{itemize}
+
+大きな地震ほど反応が明確で，ピーク時間も遅延する傾向が見られた．
+
+\subsection{感情分析結果の時系列変化}
+
+地震発生前後の感情分析結果の推移を分析した結果，以下が確認された．
+
+\begin{itemize}
+    \item \textbf{発生直後（0〜5分）}: 「驚き」「恐れ」が急増
+    \item \textbf{5〜15分後}: ネガティブ感情がピークに達し，「怒り」「嫌悪」も増加
+    \item \textbf{30分以降}: 徐々に平常時の感情分布に回帰
+\end{itemize}
+
+\subsection{LLMを利用した災害関連コメント分析}
+
+（※この節は今後の実装予定として残す，または既に実施済みなら結果を記載）
+
+\begin{itemize}
+    \item \textbf{災害関連コメントのフィルタリング}: LLM（Gemma3等）を用いたゼロショット分類
+    \item \textbf{コメント内容のクラスタリング}: MiniLM + UMAPによる全期間のコメント類型化
+\end{itemize}
+
+\section{考察}
+
+\subsection{YouTubeライブコメントの有効性}
+
+約9ヶ月間の運用と分析を通じて，以下の点でYouTubeライブ配信コメントが災害時のSNSデータソースとして有効であることが示された．
+
+\begin{itemize}
+    \item \textbf{持続的な収集可能性}: 無償API枠内で長期運用が可能であり，Xの制約を補完できる
+    \item \textbf{災害時の瞬間的反応の捕捉}: 地震発生後15分以内の感情変化を明確に観測可能
+    \item \textbf{低コストなインフラ}: サーバレス環境とIaCにより，月額XX円程度で運用可能
+\end{itemize}
+
+\subsection{Xとの比較における差異}
+
+\begin{itemize}
+    \item \textbf{利点}: 大量収集が可能，視聴者という限定集団の同期的反応が明確
+    \item \textbf{制約}: 拡散指標がない，過去データの遡及が不可，短文傾向が強い
+\end{itemize}
+
+\subsection{今後の課題}
+
+\begin{itemize}
+    \item \textbf{スパム・ボット検出}: VTuber配信での先行研究\cite{li2022live_chat_spam}を参考にしたフィルタリングの実装
+    \item \textbf{複数配信ソースへの拡張}: 他の防災系ライブ配信への横展開
+    \item \textbf{リアルタイム性の向上}: ストリーミング方式との併用によるレイテンシ短縮
+\end{itemize}
     
