@@ -178,9 +178,118 @@
   具体的な実装環境，UI設計，運用結果については評価章で述べる．
 
 
+  \section{実装}
+
+  本節では，前節までに述べた設計方針に基づく具体的な実装内容を述べる．
+
+  \subsection{実装環境}
+
+  各層の実装に使用した技術スタックを\tabref{tab:implementation_environment}に示す．
+
+  \input{table/implementation_environment}
+
+  \begin{itemize}
+      \item \textbf{データ収集層}: AWS Lambda（Python 3.11）で2分間隔の定期実行．EventBridgeによるスケジューリング．
+      \item \textbf{蓄積層}: BigQuery（日次パーティショニング），TerraformによるIaC管理．
+      \item \textbf{分析層}: Hugging Face Transformers（BERT, LUKE-WRIME），独立したLambda関数またはローカル環境にて実装．
+      \item \textbf{可視化層}: LookerStudio（無償版），Next.js + Vercelホスティング．
+  \end{itemize}
+
+  提案基盤の具体的な構成図を\figref{fig:system_configuration}に示す．各層は疎結合に設計されており，個別の保守・拡張が容易である．
+
+  \input{figure/system_configuration_diagram}
+
+  \subsection{データ収集の実装}
+
+  \subsubsection{YouTube Data API v3の実装}
+
+  YouTubeが提供するライブチャットコメント取得APIの2方式を\tabref{tab:youtube_live_chat_api}に示す．
+
+  \input{table/youtube_live_chat_api}
+
+  本実装ではliveChatMessages.list（ポーリング方式）を採用した．実装上の主要パラメータは以下の通りである．
+
+  \begin{itemize}
+      \item \textbf{実行間隔}: 2分（AWS EventBridgeによるcron式スケジューリング）
+      \item \textbf{タイムアウト設定}: Lambda関数の最大実行時間15秒
+      \item \textbf{エラーハンドリング}: API制限エラー時の指数バックオフリトライ
+  \end{itemize}
+
+  \subsubsection{データスキーマの実装}
+
+  BigQueryに格納する主要フィールドを\tabref{tab:key_fields_youtube_live_comments}に示す．
+
+  \input{table/key_fields_youtube_live_comments}
+
+  YouTube Data API v3のJSONレスポンスをネスト構造から平坦化する実装例を以下に示す．
+
+  \begin{verbatim}
+【APIレスポンス例】
+{
+  "id": "LCC.xxxx",
+  "snippet": {
+    "publishedAt": "2025-01-01T12:00:00Z",
+    "authorChannelId": "UCxxxx",
+    "displayMessage": "地震だ！",
+    "type": "textMessageEvent"
+  }
+}
+
+【BigQueryスキーマ（平坦化後）】
+- id: STRING
+- snippet_publishedAt: TIMESTAMP
+- snippet_authorChannelId: STRING
+- snippet_displayMessage: STRING (感情分析の対象)
+- snippet_type: STRING (コメント種別の識別)
+  \end{verbatim}
+
+  この設計により，API仕様変更時の影響範囲をフィールド単位で特定可能となった．
+
+  \subsection{感情分析の実装}
+
+  採用した2種類のモデルの分類カテゴリを\tabref{tab:emotion_models}に示す．
+
+  \input{table/emotion_analysis}
+
+  \begin{itemize}
+      \item \textbf{BERT（3極性分類）}: ネガティブ・ニュートラル・ポジティブ．災害時の全体的な感情傾向の把握に使用．
+      \item \textbf{LUKE-WRIME（8感情分類）}: 喜び・悲しみ・期待・驚き・怒り・恐れ・嫌悪・信頼．細粒度な情動変化の分析に使用．
+  \end{itemize}
+
+  Hugging FaceのTransformersライブラリを使用し，事前学習済みモデルをそのまま適用した（追加学習なし）．
+
+  \subsection{可視化の実装}
+
+  \subsubsection{LookerStudioによる可視化}
+
+  地震情報（P2P地震情報\cite{p2p_earthquake_api}のJSON API v2から取得）とコメント数・感情分析結果を統合した可視化例を\figref{fig:bert_emotion_count_earthquake}に示す．
+
+  \input{figure/looker_fig.tex}
+
+  この図から，地震発生直後にコメント数が急増し，ネガティブ感情（BERT）および「驚き」「恐れ」（LUKE-WRIME）の割合が増加することが確認できる．
+
+  \subsubsection{Webダッシュボードの実装}
+
+  Next.js製の独自ダッシュボードの実装環境を\tabref{tab:web_dashboard_environment}に示す．
+
+  \input{table/web_dashboard_config}
+
+  ダッシュボード画面を\figref{fig:web_dashboard}に示す．左上の設定パネルから以下のパラメータを変更可能である．
+
+  \input{figure/web_dashboard}
+
+  \begin{itemize}
+      \item \textbf{時間間隔}: 5分〜1日の9段階（5, 10, 15, 20, 30分，1, 6, 12時間，1日）
+      \item \textbf{日付範囲}: 「今日」「1日指定」「期間指定」（カレンダー形式）
+      \item \textbf{自動更新}: 「今日」選択時に秒単位で更新間隔を指定可能
+  \end{itemize}
+
+  \figref{fig:web_dashboard}では，2024年6月1日〜30日の1日集計を表示している．LUKE-WRIMEの8感情分類は，プルチックモデル\cite{plutchik1980_psychoevolutionary}を参考にした配色により，直感的な理解を支援している．
+
+
   \section{まとめ}
 
-  本章では，YouTubeライブ配信コメントを活用した持続的な災害分析基盤の設計方針を述べた．提案する基盤は以下の特徴を持つ．
+  本章では，YouTubeライブ配信コメントを活用した持続的な災害分析基盤の設計方針と具体的な実装を述べた．提案・実装した基盤は以下の特徴を持つ．
 
   \begin{itemize}
       \item \textbf{データソースの拡張}: Xの制約を補完するYouTubeライブコメントの活用．
@@ -188,4 +297,4 @@
       \item \textbf{多角的分析と即時可視化}: 感情分析と二層構造の可視化による柔軟な状況把握．
   \end{itemize}
 
-  次章では，本提案に基づく実装と，約9ヶ月間の運用を通じた有効性検証の結果を述べる．
+  次章では，約9ヶ月間の運用を通じた有効性検証の結果を述べる．
