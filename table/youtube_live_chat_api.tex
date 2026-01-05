@@ -1,0 +1,19 @@
+\begin{table}[t]
+    \centering
+    \caption{Differences in Live Chat Comment Collection APIs.}
+    \label{tab:youtube_live_chat_api}
+    \begin{tabular}{lcc}
+    \hline
+    項目 & liveChatMessages.list & liveChatMessages.streamList \\
+    \hline
+    取得方式 & ポーリング方式 & ストリーミング方式 \\
+    レイテンシ & ポーリング間隔に対応 & 低遅延（準リアルタイム） \\
+    取得タイミング & クライアント主導 & サーバ主導 \\
+    実装形態 & HTTPリクエストの繰り返し & ストリーム接続維持 \\
+    状態管理 & nextPageTokenを保持 & ストリームの生存管理 \\
+    取得単位 & リクエスト単位 & ストリーム単位 \\
+    リアルタイム性 & 中 & 高 \\
+    用途の主眼 & 安定した定期取得 & 即時性が求められる処理 \\
+    \hline
+    \end{tabular}
+\end{table}
