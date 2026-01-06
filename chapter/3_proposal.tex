@@ -23,7 +23,7 @@
       \item \textbf{データ収集層}: YouTube Data API v3を用いたポーリング方式によるコメント取得．サーバレス環境（AWS Lambda）で定期実行し，低コストで持続的な収集を実現．
       \item \textbf{蓄積層}: Google Cloud BigQueryを採用し，時間パーティショニングによる効率的なクエリ処理とストレージ最適化を実現．Infrastructure as Code（Terraform）による環境管理で再現性を確保．
       \item \textbf{分析層}: 感情分析モデル（BERT, LUKE-WRIME）を独立したシステムとして実装．分析結果は蓄積層に再格納され，時系列分析や感情推移の把握に利用可能．
-      \item \textbf{可視化層}: LookerStudioによる探索的データ分析（EDA）と，Next.js製Webダッシュボードによる即時的な状況把握の両立．
+      \item \textbf{可視化層}: LookerStudioによる探索的データ分析（EDA）\cite{agarwal2024eda_banking}と，Next.js製Webダッシュボードによる即時的な状況把握の両立．
   \end{itemize}
 
   以下，各層の設計方針を詳述する．
