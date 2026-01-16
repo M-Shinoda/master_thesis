@@ -15,7 +15,9 @@
   \section{全体アーキテクチャ}
 
   提案する基盤の全体構成を\figref{fig:system_overview}に示す．本基盤は，データ収集層，蓄積層，分析層，可視化層の4層から構成され，各層が疎結合に設計されているため，個別の拡張や変更が容易である．
-  
+
+  \clearpage
+
   \input{figure/system_overview}
 
   \begin{itemize}
@@ -67,6 +69,7 @@
   YouTubeが提供しているライブチャットコメントの取得が可能なAPIは2種類用意されている．
   それら2種類の機能概要や仕様について\tabref{tab:youtube_live_chat_api}に示す．
   
+  \clearpage
   \input{table/youtube_live_chat_api}
   
   提案するシステムではliveChatMessages.listを使用する．選定理由の大きな点としてはコスト面である．
@@ -92,7 +95,6 @@
   % TODO：リクエスト数上限も記載すると良いかも
   そのため，本システムでは余裕を含め最高2分に1度取得を行う．
 
-  \input{table/key_fields_youtube_live_comments} % TODO: Xの内容も
 
   %3．3．2
   \subsection{データ蓄積層}
@@ -116,6 +118,10 @@
   % \input{table/table2}
 
   本研究で扱う，主要なフィールドを\tabref{tab:key_fields_youtube_live_comments}に示す．
+
+  \clearpage
+  \input{table/key_fields_youtube_live_comments}
+
   YouTubeData API v3 のレスポンスを基に設計されており，コメント本文や投稿時刻，投稿の種類など，本研究の分析に不可欠なデータを構造化して格納する．DB スキーマのフィールド名は API で収集できる JSON データのキーに基づいており，ネストされた JSON フィールドをフラット化（平坦化）して表現している．
   以下に，APIから取得されるJSONデータの主要部分を切り出した一例を示す．
 
@@ -181,10 +187,11 @@
   また，Looker Studioにはコネクタと呼ばれる，Googleまたはそれ以外の各種サービスと連携するための機能がある．Google App Scriptを利用して，外部のサービスと連携する自作のコネクタを実装することで，分析データの拡張が容易である．
   本研究では，地震情報を配信するYouTubeライブ配信からコメントを収集しているため，実際の震源地や震度などの地震情報と提供している外部サービスと連携した可視化を行う．収集元の外部サービスは後ほど述べる．
 
-  \input{figure/looker_fig.tex}
 
   実際に収集したデータを日付ごとに分けたコメント総数と感情分析結果，地震数の関係を，\figref{fig:bert_emotion_count_earthquake}に示す．
   この図により，地震の発生と，SNS上の市民感情の変動との相関関係を確認できる．
+  
+  \input{figure/looker_fig.tex}
   
   
   Webアプリケーションとしてダッシュボードを作成し可視化を行う場合，より柔軟なインターフェース設計が可能となる．
