@@ -96,10 +96,11 @@ Xでは地震に限られない抽象的災害ツイートの平均文字数が�
 
 \subsection{コメント数の分布}
 
-コメント数の時間的分布を，時間帯別，曜日別，月別に集計し，地震発生件数との関係を分析した結果を\figref{fig:comment_count_by_hour}，\figref{fig:comment_count_by_day_of_week}，\figref{fig:comment_count_by_month}に示す．
+コメント数の時間的分布を，時間帯別，曜日別，曜日と時間帯別，月別に集計し，地震発生件数との関係を分析した結果を\figref{fig:comment_count_by_hour}，\figref{fig:comment_count_by_day_of_week}，\figref{fig:comment_count_by_day_of_week_hour}，\figref{fig:comment_count_by_month}に示す．
 
 \input{figure/comment_count_by_hour}
 \input{figure/comment_count_by_day_of_week}
+\input{figure/comment_count_by_day_of_week_hour}
 \input{figure/comment_count_by_month}
 
 \subsubsection{時間帯別分布}
@@ -117,6 +118,13 @@ Xでは地震に限られない抽象的災害ツイートの平均文字数が�
 地震発生件数は月曜日に約460件で最大，木曜日に約260件で最小を記録している．
 月曜日はコメント数と地震発生件数がともに高い値を示しているが，水曜日はコメント数が最大であるにもかかわらず地震発生件数は約365件と中程度である．
 曜日間でのコメント数の変動幅は約1.8倍であり，時間帯別や月別と比較して変動は小さい．
+
+\subsubsection{曜日時間別分布}
+\figref{fig:comment_count_by_day_of_week_hour}に示すように，曜日と時間帯別のコメント数分布は，時間帯別の分布パターンが各曜日で類似していることが確認できる．
+基本的には\figref{fig:comment_count_by_hour}で示したように，どの曜日も23時台に最も多くのコメント数を記録している．
+これはXの投稿活動における日内周期（circadian patterns）と一致している\cite{tenThij2014circadian}．
+一方で，火曜日と木曜日において，お昼頃の12時台にコメント数が増加する傾向は，見られなかった．
+これについては，火曜日も木曜日も全体的な地震の量が他の曜日と比べて少ないため，地震の発生量に起因している可能性がある．
 
 \subsubsection{月別分布}
 \figref{fig:comment_count_by_month}に示すように，2025年2月から10月までの月別コメント数は約10,500件〜約51,000件の範囲で大きく変動している．
