@@ -1,5 +1,8 @@
 .vscode/
 *.log
 *.pdf
+# !pdf/format.pdf
+!pdf/修士論文_24AMJ18_篠田征美.pdf
+# !top/修士論文_表紙.pdf
 *.synctex
 __latexindent_temp.tex
