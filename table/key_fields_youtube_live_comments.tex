@@ -1,16 +1,16 @@
-\begin{table}[h]
+\begin{table}[htbp]
   \centering
   \caption{Key fields in YouTube Live comments}
   \label{tab:key_fields_youtube_live_comments}
   \begin{tabular}{lll}
     \hline
-    フィールド名                  & 説明     \\
+    フィールド名            & データ型      & 説明     \\
     \hline
     \hline
-    id                      & ユニークID \\
-    snippet\_publishedAt    & 投稿日時   \\
-    snippet\_displayMessage & コメント本文 \\
-    snippet\_type           & コメント種類 \\
+    id                    & STRING  & ユニークID \\
+    snippet\_publishedAt   & TIMESTAMP & 投稿日時（UTC時間）   \\
+    snippet\_displayMessage & STRING & コメント本文 \\
+    snippet\_type          & STRING & コメント種類 \\
     \hline
   \end{tabular}
 \end{table}
